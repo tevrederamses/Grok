@@ -4,19 +4,20 @@
 <meta charset="UTF-8">
 <title>Inloggegevens</title>
 <style>
-  body { font-family: system-ui, sans-serif; background: #f5f5f7; margin: 0; padding: 16px; max-width: 480px; margin-left: auto; margin-right: auto; box-sizing: border-box; }
-  h1 { font-size: 18px; color: #222; margin-bottom: 12px; }
-  .card { background: #fff; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  .row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; gap: 6px; }
-  .label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.03em; width: 60px; flex-shrink: 0; }
-  .value { font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: #111; word-break: break-all; flex: 1; }
-  button { border: none; background: #0072CC; color: #fff; border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; flex-shrink: 0; }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f7; margin: 0; padding: 16px; width: 100%; }
+  h1 { font-size: 32px; color: #222; margin: 4px 0 20px; }
+  .card { background: #fff; border-radius: 14px; padding: 20px; margin-bottom: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; gap: 10px; flex-wrap: wrap; }
+  .label { font-size: 15px; color: #888; text-transform: uppercase; letter-spacing: 0.03em; width: 100%; margin-bottom: 4px; }
+  .value { font-family: ui-monospace, Menlo, monospace; font-size: 24px; font-weight: 700; color: #111; word-break: break-all; flex: 1; min-width: 0; }
+  button { border: none; background: #0072CC; color: #fff; border-radius: 10px; padding: 14px 22px; font-size: 17px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
   button:hover { background: #005a9e; }
   button.copied { background: #2e9e4a; }
-  hr { border: none; border-top: 1px solid #eee; margin: 4px 0; }
-  .day-label { font-size: 12px; color: #666; width: 26px; flex-shrink: 0; text-align: center; }
-  .date-input { font-family: inherit; font-size: 13px; border: 1px solid #ddd; border-radius: 6px; padding: 4px 6px; color: #111; background: #fafafa; width: 122px; flex-shrink: 0; }
-  .time-input { width: 78px; }
+  hr { border: none; border-top: 1px solid #eee; margin: 8px 0; }
+  .day-label { font-size: 18px; color: #666; width: 40px; flex-shrink: 0; text-align: center; }
+  .date-input { font-family: inherit; font-size: 18px; border: 1px solid #ddd; border-radius: 10px; padding: 10px 12px; color: #111; background: #fafafa; flex: 1; min-width: 130px; }
+  .time-input { flex: 0 0 auto; min-width: 100px; }
 </style>
 </head>
 <body>
@@ -34,7 +35,7 @@ const data = [
 ];
 
 const list = document.getElementById('list');
-const cardEntries = [];
+const cardEntries = []; // { card, dateInput, timeInput }
 
 data.forEach(entry => {
   const card = document.createElement('div');
@@ -64,6 +65,7 @@ function sortCards() {
     const db = b.dateInput.value;
     const tb = b.timeInput.value || '00:00';
 
+    // Lege datums altijd onderaan
     if (!da && !db) return 0;
     if (!da) return 1;
     if (!db) return -1;
@@ -127,20 +129,27 @@ function makeDateRow(key, defaultDate, defaultTime) {
   timeInput.className = 'date-input time-input';
   timeInput.value = defaultTime || '';
 
+  // Vaste waarden uit het bestand hebben altijd voorrang.
+  // localStorage wordt nog wel bijgewerkt bij wijzigen, maar telt niet meer als bron bij het laden.
+
   updateDayLabel();
 
   input.addEventListener('change', () => {
     updateDayLabel();
     try {
       localStorage.setItem(key, input.value);
-    } catch (err) {}
+    } catch (err) {
+      // localStorage niet beschikbaar, wijziging gaat verloren bij herladen
+    }
     if (typeof sortCards === 'function') sortCards();
   });
 
   timeInput.addEventListener('change', () => {
     try {
       localStorage.setItem(key + '_tijd', timeInput.value);
-    } catch (err) {}
+    } catch (err) {
+      // localStorage niet beschikbaar, wijziging gaat verloren bij herladen
+    }
     if (typeof sortCards === 'function') sortCards();
   });
 
@@ -159,6 +168,7 @@ function getDutchWeekday(dateStr) {
   return days[d.getDay()];
 }
 
+
 function markCopied(btn) {
   btn.textContent = 'Gekopieerd';
   btn.classList.add('copied');
@@ -169,6 +179,7 @@ function markCopied(btn) {
 }
 
 function copyValue(value, btn) {
+  // Probeer eerst de moderne Clipboard API (werkt alleen in beveiligde context)
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(value).then(() => markCopied(btn)).catch(() => fallbackCopy(value, btn));
   } else {
@@ -179,6 +190,7 @@ function copyValue(value, btn) {
 function fallbackCopy(value, btn) {
   const textarea = document.createElement('textarea');
   textarea.value = value;
+  // Onzichtbaar maken maar wel selecteerbaar
   textarea.style.position = 'fixed';
   textarea.style.top = '0';
   textarea.style.left = '0';
