@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Inloggegevens</title>
 <style>
-  body { font-family: system-ui, sans-serif; background: #f5f5f7; margin: 0; padding: 16px; max-width: 420px; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f7; margin: 0; padding: 16px; max-width: 480px; margin-left: auto; margin-right: auto; box-sizing: border-box; }
   h1 { font-size: 18px; color: #222; margin-bottom: 12px; }
   .card { background: #fff; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; gap: 6px; }
@@ -34,6 +34,7 @@ const data = [
 ];
 
 const list = document.getElementById('list');
+const cardEntries = [];
 
 data.forEach(entry => {
   const card = document.createElement('div');
@@ -43,10 +44,41 @@ data.forEach(entry => {
   card.appendChild(document.createElement('hr'));
   card.appendChild(makeRow('Wachtwoord', entry.pass));
   card.appendChild(document.createElement('hr'));
-  card.appendChild(makeDateRow('datum_' + entry.user, entry.date, entry.time));
+
+  const dateRow = makeDateRow('datum_' + entry.user, entry.date, entry.time);
+  card.appendChild(dateRow);
 
   list.appendChild(card);
+
+  cardEntries.push({
+    card: card,
+    dateInput: dateRow.querySelector('.date-input:not(.time-input)'),
+    timeInput: dateRow.querySelector('.time-input')
+  });
 });
+
+function sortCards() {
+  const sorted = cardEntries.slice().sort((a, b) => {
+    const da = a.dateInput.value;
+    const ta = a.timeInput.value || '00:00';
+    const db = b.dateInput.value;
+    const tb = b.timeInput.value || '00:00';
+
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+
+    const keyA = da + 'T' + ta;
+    const keyB = db + 'T' + tb;
+    if (keyA < keyB) return -1;
+    if (keyA > keyB) return 1;
+    return 0;
+  });
+
+  sorted.forEach(entry => list.appendChild(entry.card));
+}
+
+sortCards();
 
 function makeRow(label, value) {
   const row = document.createElement('div');
@@ -102,12 +134,14 @@ function makeDateRow(key, defaultDate, defaultTime) {
     try {
       localStorage.setItem(key, input.value);
     } catch (err) {}
+    if (typeof sortCards === 'function') sortCards();
   });
 
   timeInput.addEventListener('change', () => {
     try {
       localStorage.setItem(key + '_tijd', timeInput.value);
     } catch (err) {}
+    if (typeof sortCards === 'function') sortCards();
   });
 
   row.appendChild(labelEl);
